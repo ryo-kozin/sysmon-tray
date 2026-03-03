@@ -89,6 +89,43 @@ jobs:
         working-directory: sysmon-mcp
         run: cargo test
 
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri
+            sysmon-mcp
+
+      - name: Install Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin --locked
+
+      - name: Coverage (tauri)
+        working-directory: src-tauri
+        run: cargo tarpaulin --out xml --output-dir ../coverage --skip-clean -- --test-threads=1
+
+      - name: Coverage (mcp)
+        working-directory: sysmon-mcp
+        run: cargo tarpaulin --out xml --output-dir ../coverage-mcp --skip-clean -- --test-threads=1
+
+      - name: Report coverage
+        run: |
+          echo "## src-tauri coverage"
+          cat coverage/cobertura.xml | head -5
+          echo "## sysmon-mcp coverage"
+          cat coverage-mcp/cobertura.xml | head -5
+
   security:
     name: Security Audit
     runs-on: ubuntu-latest

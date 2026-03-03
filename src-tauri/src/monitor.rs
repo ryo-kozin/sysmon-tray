@@ -103,3 +103,53 @@ impl MonitorState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn monitor_returns_valid_metrics() {
+        let monitor = MonitorState::new();
+        // Need a small delay for CPU measurement accuracy
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        let info = monitor.refresh_and_get();
+
+        assert!(info.memory_total > 0, "memory_total should be > 0");
+        assert!(info.memory_used > 0, "memory_used should be > 0");
+        assert!(info.memory_used <= info.memory_total);
+        assert!(info.memory_percent >= 0.0 && info.memory_percent <= 100.0);
+        assert!(info.disk_total > 0, "disk_total should be > 0");
+        assert!(info.disk_free <= info.disk_total);
+        assert!(info.disk_percent_used >= 0.0 && info.disk_percent_used <= 100.0);
+        assert!(info.cpu_usage >= 0.0 && info.cpu_usage <= 100.0 * 128.0); // per-core can exceed 100
+    }
+
+    #[test]
+    fn system_info_serializes() {
+        let info = SystemInfo {
+            cpu_usage: 42.5,
+            memory_total: 16_000_000_000,
+            memory_used: 8_000_000_000,
+            memory_percent: 50.0,
+            disk_total: 500_000_000_000,
+            disk_free: 250_000_000_000,
+            disk_percent_used: 50.0,
+            top_cpu_process: "test (50.0%)".into(),
+            top_mem_process: "test (500 MB)".into(),
+        };
+        let json = serde_json::to_string(&info).unwrap();
+        assert!(json.contains("42.5"));
+        assert!(json.contains("memory_total"));
+    }
+
+    #[test]
+    fn multiple_refreshes_succeed() {
+        let monitor = MonitorState::new();
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        for _ in 0..3 {
+            let info = monitor.refresh_and_get();
+            assert!(info.memory_total > 0);
+        }
+    }
+}

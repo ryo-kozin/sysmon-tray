@@ -344,6 +344,63 @@ fn send_response(stdout: &mut io::StdoutLock, resp: &JsonRpcResponse) {
     stdout.flush().unwrap();
 }
 
+fn handle_request(line: &str, sys: &mut System, disks: &mut Disks) -> Option<JsonRpcResponse> {
+    if line.trim().is_empty() {
+        return None;
+    }
+
+    let req: JsonRpcRequest = match serde_json::from_str(line) {
+        Ok(r) => r,
+        Err(e) => {
+            return Some(JsonRpcResponse {
+                jsonrpc: "2.0".into(),
+                id: Value::Null,
+                result: None,
+                error: Some(JsonRpcError {
+                    code: -32700,
+                    message: format!("Parse error: {e}"),
+                }),
+            });
+        }
+    };
+
+    if req.jsonrpc != "2.0" {
+        return None;
+    }
+
+    // Notifications (no id) — no response needed
+    let id = req.id?;
+
+    let result = match req.method.as_str() {
+        "initialize" => Ok(handle_initialize(&req.params)),
+        "tools/list" => Ok(handle_tools_list()),
+        "tools/call" => handle_tools_call(&req.params, sys, disks).map_err(|e| JsonRpcError {
+            code: -32602,
+            message: e,
+        }),
+        "ping" => Ok(json!({})),
+        _ => Err(JsonRpcError {
+            code: -32601,
+            message: format!("Method not found: {}", req.method),
+        }),
+    };
+
+    Some(match result {
+        Ok(r) => JsonRpcResponse {
+            jsonrpc: "2.0".into(),
+            id,
+            result: Some(r),
+            error: None,
+        },
+        Err(e) => JsonRpcResponse {
+            jsonrpc: "2.0".into(),
+            id,
+            result: None,
+            error: Some(e),
+        },
+    })
+}
+
 fn main() {
     // Minimal init: only CPU + memory — never load full process list
     let mut sys = System::new();
@@ -361,70 +418,255 @@ fn main() {
     for line in stdin.lock().lines() {
         let Ok(line) = line else { break };
 
-        if line.trim().is_empty() {
-            continue;
+        if let Some(resp) = handle_request(&line, &mut sys, &mut disks) {
+            send_response(&mut stdout, &resp);
         }
+    }
+}
 
-        let req: JsonRpcRequest = match serde_json::from_str(&line) {
-            Ok(r) => r,
-            Err(e) => {
-                let resp = JsonRpcResponse {
-                    jsonrpc: "2.0".into(),
-                    id: Value::Null,
-                    result: None,
-                    error: Some(JsonRpcError {
-                        code: -32700,
-                        message: format!("Parse error: {e}"),
-                    }),
-                };
-                send_response(&mut stdout, &resp);
-                continue;
-            }
-        };
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        if req.jsonrpc != "2.0" {
-            continue;
+    fn setup() -> (System, Disks) {
+        let mut sys = System::new();
+        sys.refresh_cpu_all();
+        sys.refresh_memory();
+        std::thread::sleep(MINIMUM_CPU_UPDATE_INTERVAL);
+        sys.refresh_cpu_all();
+        let disks = Disks::new_with_refreshed_list();
+        (sys, disks)
+    }
+
+    fn request(method: &str, id: u64, params: Value) -> String {
+        json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "method": method,
+            "params": params
+        })
+        .to_string()
+    }
+
+    #[test]
+    fn initialize_returns_server_info() {
+        let (mut sys, mut disks) = setup();
+        let line = request("initialize", 1, json!({}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let result = resp.result.unwrap();
+        assert_eq!(result["protocolVersion"], PROTOCOL_VERSION);
+        assert_eq!(result["serverInfo"]["name"], SERVER_NAME);
+    }
+
+    #[test]
+    fn tools_list_returns_all_tools() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/list", 1, json!({}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let tools = resp.result.unwrap()["tools"].as_array().unwrap().clone();
+        let names: Vec<&str> = tools.iter().map(|t| t["name"].as_str().unwrap()).collect();
+        assert!(names.contains(&"get_metrics"));
+        assert!(names.contains(&"get_cpu"));
+        assert!(names.contains(&"get_memory"));
+        assert!(names.contains(&"get_disk"));
+        assert!(names.contains(&"get_load"));
+        assert!(names.contains(&"is_system_busy"));
+        assert_eq!(names.len(), 6);
+    }
+
+    #[test]
+    fn tools_call_get_metrics() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({"name": "get_metrics"}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let content = &resp.result.unwrap()["content"][0]["text"];
+        assert!(content.as_str().unwrap().contains("cpu_usage_percent"));
+    }
+
+    #[test]
+    fn tools_call_get_cpu() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({"name": "get_cpu"}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let text = resp.result.unwrap()["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.contains("CPU Usage:"));
+        assert!(text.contains("Logical Cores:"));
+    }
+
+    #[test]
+    fn tools_call_get_memory() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({"name": "get_memory"}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let text = resp.result.unwrap()["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.contains("Memory Usage:"));
+    }
+
+    #[test]
+    fn tools_call_get_disk() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({"name": "get_disk"}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let text = resp.result.unwrap()["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.contains("Disk Usage:"));
+    }
+
+    #[test]
+    fn tools_call_get_load() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({"name": "get_load"}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let text = resp.result.unwrap()["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.contains("Load Average:"));
+        assert!(text.contains("Uptime:"));
+    }
+
+    #[test]
+    fn tools_call_is_system_busy_default_thresholds() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({"name": "is_system_busy"}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let text = resp.result.unwrap()["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.contains("busy:"));
+        assert!(text.contains("recommendation:"));
+    }
+
+    #[test]
+    fn tools_call_is_system_busy_custom_thresholds() {
+        let (mut sys, mut disks) = setup();
+        let line = request(
+            "tools/call",
+            1,
+            json!({"name": "is_system_busy", "arguments": {"cpu_threshold": 50, "memory_threshold": 50}}),
+        );
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        let text = resp.result.unwrap()["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .to_string();
+        assert!(text.contains("50% threshold"));
+    }
+
+    #[test]
+    fn unknown_tool_returns_error() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({"name": "nonexistent"}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_some());
+        assert_eq!(resp.error.unwrap().code, -32602);
+    }
+
+    #[test]
+    fn missing_tool_name_returns_error() {
+        let (mut sys, mut disks) = setup();
+        let line = request("tools/call", 1, json!({}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_some());
+    }
+
+    #[test]
+    fn unknown_method_returns_error() {
+        let (mut sys, mut disks) = setup();
+        let line = request("nonexistent/method", 1, json!({}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_some());
+        assert_eq!(resp.error.unwrap().code, -32601);
+    }
+
+    #[test]
+    fn ping_returns_empty_object() {
+        let (mut sys, mut disks) = setup();
+        let line = request("ping", 1, json!({}));
+        let resp = handle_request(&line, &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_none());
+        assert_eq!(resp.result.unwrap(), json!({}));
+    }
+
+    #[test]
+    fn parse_error_returns_json_rpc_error() {
+        let (mut sys, mut disks) = setup();
+        let resp = handle_request("not valid json", &mut sys, &mut disks).unwrap();
+        assert!(resp.error.is_some());
+        assert_eq!(resp.error.unwrap().code, -32700);
+    }
+
+    #[test]
+    fn empty_line_returns_none() {
+        let (mut sys, mut disks) = setup();
+        assert!(handle_request("", &mut sys, &mut disks).is_none());
+        assert!(handle_request("   ", &mut sys, &mut disks).is_none());
+    }
+
+    #[test]
+    fn notification_without_id_returns_none() {
+        let (mut sys, mut disks) = setup();
+        let line = json!({
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized"
+        })
+        .to_string();
+        assert!(handle_request(&line, &mut sys, &mut disks).is_none());
+    }
+
+    #[test]
+    fn wrong_jsonrpc_version_returns_none() {
+        let (mut sys, mut disks) = setup();
+        let line = json!({
+            "jsonrpc": "1.0",
+            "id": 1,
+            "method": "ping"
+        })
+        .to_string();
+        assert!(handle_request(&line, &mut sys, &mut disks).is_none());
+    }
+
+    #[test]
+    fn collect_metrics_returns_valid_data() {
+        let (mut sys, mut disks) = setup();
+        let metrics = collect_metrics(&mut sys, &mut disks);
+        assert!(metrics.cpu_count_logical > 0);
+        assert!(metrics.memory_total_bytes > 0);
+        assert!(metrics.memory_used_bytes <= metrics.memory_total_bytes);
+        assert!(metrics.memory_usage_percent >= 0.0 && metrics.memory_usage_percent <= 100.0);
+        assert!(metrics.uptime_secs > 0);
+    }
+
+    #[test]
+    fn system_metrics_contains_no_pii() {
+        let (mut sys, mut disks) = setup();
+        let metrics = collect_metrics(&mut sys, &mut disks);
+        let json = serde_json::to_string(&metrics).unwrap();
+        // Ensure no string fields leak through — all values should be numbers
+        let parsed: Value = serde_json::from_str(&json).unwrap();
+        for (_, v) in parsed.as_object().unwrap() {
+            assert!(
+                v.is_number(),
+                "all metric fields should be numeric, found: {v}"
+            );
         }
-
-        // Notifications (no id) — just acknowledge
-        if req.id.is_none() {
-            // "notifications/initialized" etc — no response needed
-            continue;
-        }
-
-        let id = req.id.unwrap_or(Value::Null);
-
-        let result = match req.method.as_str() {
-            "initialize" => Ok(handle_initialize(&req.params)),
-            "tools/list" => Ok(handle_tools_list()),
-            "tools/call" => {
-                handle_tools_call(&req.params, &mut sys, &mut disks).map_err(|e| JsonRpcError {
-                    code: -32602,
-                    message: e,
-                })
-            }
-            "ping" => Ok(json!({})),
-            _ => Err(JsonRpcError {
-                code: -32601,
-                message: format!("Method not found: {}", req.method),
-            }),
-        };
-
-        let resp = match result {
-            Ok(r) => JsonRpcResponse {
-                jsonrpc: "2.0".into(),
-                id,
-                result: Some(r),
-                error: None,
-            },
-            Err(e) => JsonRpcResponse {
-                jsonrpc: "2.0".into(),
-                id,
-                result: None,
-                error: Some(e),
-            },
-        };
-
-        send_response(&mut stdout, &resp);
     }
 }

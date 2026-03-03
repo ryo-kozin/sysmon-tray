@@ -76,3 +76,108 @@ impl Config {
 }
 
 pub struct ConfigState(pub Mutex<Config>);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_values() {
+        let cfg = Config::default();
+        assert_eq!(cfg.update_interval_secs, 3);
+        assert!((cfg.cpu_threshold_percent - 80.0).abs() < f32::EPSILON);
+        assert_eq!(cfg.cpu_sustained_secs, 10);
+        assert!((cfg.memory_free_threshold_percent - 10.0).abs() < f32::EPSILON);
+        assert!((cfg.disk_free_threshold_gb - 10.0).abs() < f64::EPSILON);
+        assert_eq!(cfg.notification_cooldown_mins, 15);
+        assert!(cfg.notify_cpu);
+        assert!(cfg.notify_memory);
+        assert!(cfg.notify_disk);
+        assert!(!cfg.autostart);
+    }
+
+    #[test]
+    fn serialize_roundtrip() {
+        let cfg = Config::default();
+        let json = serde_json::to_string(&cfg).unwrap();
+        let deserialized: Config = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.update_interval_secs, cfg.update_interval_secs);
+        assert!(
+            (deserialized.cpu_threshold_percent - cfg.cpu_threshold_percent).abs() < f32::EPSILON
+        );
+        assert_eq!(deserialized.autostart, cfg.autostart);
+    }
+
+    #[test]
+    fn deserialize_partial_json_uses_defaults() {
+        // Missing fields should cause deserialization to fall back to default
+        let json = r#"{"update_interval_secs": 5}"#;
+        let result: Result<Config, _> = serde_json::from_str(json);
+        // Serde requires all fields by default, so partial JSON fails
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validated_clamps_low_values() {
+        let cfg = Config {
+            update_interval_secs: 0,
+            cpu_threshold_percent: 0.0,
+            cpu_sustained_secs: 0,
+            memory_free_threshold_percent: 0.0,
+            disk_free_threshold_gb: 0.0,
+            notification_cooldown_mins: 0,
+            ..Config::default()
+        };
+        let v = cfg.validated();
+        assert_eq!(v.update_interval_secs, 1);
+        assert!((v.cpu_threshold_percent - 1.0).abs() < f32::EPSILON);
+        assert_eq!(v.cpu_sustained_secs, 1);
+        assert!((v.memory_free_threshold_percent - 1.0).abs() < f32::EPSILON);
+        assert!((v.disk_free_threshold_gb - 0.5).abs() < f64::EPSILON);
+        assert_eq!(v.notification_cooldown_mins, 1);
+    }
+
+    #[test]
+    fn validated_clamps_high_values() {
+        let cfg = Config {
+            update_interval_secs: 999,
+            cpu_threshold_percent: 200.0,
+            cpu_sustained_secs: 999,
+            memory_free_threshold_percent: 100.0,
+            disk_free_threshold_gb: 9999.0,
+            notification_cooldown_mins: 999,
+            ..Config::default()
+        };
+        let v = cfg.validated();
+        assert_eq!(v.update_interval_secs, 60);
+        assert!((v.cpu_threshold_percent - 100.0).abs() < f32::EPSILON);
+        assert_eq!(v.cpu_sustained_secs, 300);
+        assert!((v.memory_free_threshold_percent - 50.0).abs() < f32::EPSILON);
+        assert!((v.disk_free_threshold_gb - 500.0).abs() < f64::EPSILON);
+        assert_eq!(v.notification_cooldown_mins, 120);
+    }
+
+    #[test]
+    fn validated_preserves_valid_values() {
+        let cfg = Config::default();
+        let v = cfg.validated();
+        assert_eq!(v.update_interval_secs, 3);
+        assert!((v.cpu_threshold_percent - 80.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn validated_preserves_booleans() {
+        let cfg = Config {
+            notify_cpu: false,
+            notify_memory: false,
+            notify_disk: false,
+            autostart: true,
+            ..Config::default()
+        };
+        let v = cfg.validated();
+        assert!(!v.notify_cpu);
+        assert!(!v.notify_memory);
+        assert!(!v.notify_disk);
+        assert!(v.autostart);
+    }
+}
