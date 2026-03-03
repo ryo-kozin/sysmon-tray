@@ -30,7 +30,7 @@ impl NotifierState {
                 let start = high_since.get_or_insert_with(Instant::now);
                 if start.elapsed().as_secs() >= config.cpu_sustained_secs {
                     let mut last = self.last_cpu_notify.lock().unwrap();
-                    if last.map_or(true, |t| t.elapsed() >= cooldown) {
+                    if last.is_none_or(|t| t.elapsed() >= cooldown) {
                         notifications.push(Notification {
                             title: "CPU Usage High".into(),
                             body: format!(
@@ -50,7 +50,7 @@ impl NotifierState {
             let free_percent = 100.0 - info.memory_percent;
             if free_percent < config.memory_free_threshold_percent {
                 let mut last = self.last_mem_notify.lock().unwrap();
-                if last.map_or(true, |t| t.elapsed() >= cooldown) {
+                if last.is_none_or(|t| t.elapsed() >= cooldown) {
                     notifications.push(Notification {
                         title: "Memory Low".into(),
                         body: format!(
@@ -67,7 +67,7 @@ impl NotifierState {
             let free_gb = info.disk_free as f64 / 1_073_741_824.0;
             if free_gb < config.disk_free_threshold_gb {
                 let mut last = self.last_disk_notify.lock().unwrap();
-                if last.map_or(true, |t| t.elapsed() >= cooldown) {
+                if last.is_none_or(|t| t.elapsed() >= cooldown) {
                     notifications.push(Notification {
                         title: "Disk Space Low".into(),
                         body: format!("Free disk space: {:.1} GB", free_gb),

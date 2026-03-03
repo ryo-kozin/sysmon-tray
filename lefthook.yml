@@ -1,0 +1,39 @@
+pre-commit:
+  parallel: true
+  commands:
+    ts-typecheck:
+      glob: "*.{ts,tsx}"
+      run: npx tsc --noEmit
+
+    eslint:
+      glob: "*.{ts,tsx}"
+      run: npx eslint --fix {staged_files}
+      stage_fixed: true
+
+    prettier:
+      glob: "*.{ts,tsx,json,css,html,md,yaml,yml}"
+      run: npx prettier --write {staged_files}
+      stage_fixed: true
+
+    cargo-fmt:
+      glob: "*.rs"
+      root: "src-tauri/"
+      run: cargo fmt -- --check
+
+    cargo-clippy:
+      glob: "*.rs"
+      root: "src-tauri/"
+      run: cargo clippy -- -D warnings
+
+    gitleaks:
+      run: gitleaks protect --staged --redact -v
+
+pre-push:
+  parallel: false
+  commands:
+    ts-build:
+      run: pnpm build
+
+    cargo-check:
+      root: "src-tauri/"
+      run: cargo check --all-targets

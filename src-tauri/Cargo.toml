@@ -5,7 +5,7 @@ edition = "2021"
 description = "Lightweight cross-platform system resource monitor"
 authors = ["ryotaro"]
 license = "MIT"
-repository = "https://github.com/ryotaro/sysmon-tray"
+repository = "https://github.com/ryo-kozin/sysmon-tray"
 
 [lib]
 name = "system_monitor_lib"
@@ -22,3 +22,19 @@ sysinfo = "0.34"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs = "6"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "deny", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+needless_pass_by_value = "allow"
+cast_precision_loss = "allow"
+struct_excessive_bools = "allow"
+uninlined_format_args = "allow"
+single_match_else = "allow"

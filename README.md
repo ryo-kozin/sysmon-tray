@@ -1,5 +1,9 @@
 # System Monitor
 
+[![CI](https://github.com/ryo-kozin/sysmon-tray/actions/workflows/ci.yml/badge.svg)](https://github.com/ryo-kozin/sysmon-tray/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tauri](https://img.shields.io/badge/Tauri-v2-blue?logo=tauri)](https://tauri.app)
+
 A lightweight, cross-platform system resource monitor that lives in your menu bar / system tray. Built with [Tauri v2](https://tauri.app), Rust, and React.
 
 ## Features
@@ -13,8 +17,8 @@ A lightweight, cross-platform system resource monitor that lives in your menu ba
 
 ## Supported Platforms
 
-| Platform | Status |
-|----------|--------|
+| Platform | Status    |
+| -------- | --------- |
 | macOS    | Supported |
 | Windows  | Supported |
 | Linux    | Supported |
@@ -33,7 +37,7 @@ A lightweight, cross-platform system resource monitor that lives in your menu ba
 
 ```bash
 # Clone the repository
-git clone https://github.com/ryotaro/sysmon-tray.git
+git clone https://github.com/ryo-kozin/sysmon-tray.git
 cd sysmon-tray
 
 # Install dependencies
@@ -50,20 +54,20 @@ pnpm tauri build
 
 Settings are stored in your system config directory:
 
-| Platform | Path |
-|----------|------|
+| Platform | Path                                                       |
+| -------- | ---------------------------------------------------------- |
 | macOS    | `~/Library/Application Support/system-monitor/config.json` |
-| Windows  | `%APPDATA%\system-monitor\config.json` |
-| Linux    | `~/.config/system-monitor/config.json` |
+| Windows  | `%APPDATA%\system-monitor\config.json`                     |
+| Linux    | `~/.config/system-monitor/config.json`                     |
 
 ### Default Thresholds
 
-| Resource | Condition | Default |
-|----------|-----------|---------|
+| Resource | Condition                           | Default  |
+| -------- | ----------------------------------- | -------- |
 | CPU      | Usage above threshold for N seconds | 80%, 10s |
-| Memory   | Free memory below threshold | 10% |
-| Disk     | Free space below threshold | 10 GB |
-| Cooldown | Time between repeated alerts | 15 min |
+| Memory   | Free memory below threshold         | 10%      |
+| Disk     | Free space below threshold          | 10 GB    |
+| Cooldown | Time between repeated alerts        | 15 min   |
 
 ## Project Structure
 

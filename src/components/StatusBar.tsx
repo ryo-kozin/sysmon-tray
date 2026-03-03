@@ -10,7 +10,12 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1_048_576).toFixed(0)} MB`;
 }
 
-function Bar({ label, percent, detail, color }: {
+function Bar({
+  label,
+  percent,
+  detail,
+  color,
+}: {
   label: string;
   percent: number;
   detail: string;
@@ -18,23 +23,29 @@ function Bar({ label, percent, detail, color }: {
 }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+      <div
+        style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}
+      >
         <span style={{ fontWeight: 600 }}>{label}</span>
         <span style={{ opacity: 0.7 }}>{detail}</span>
       </div>
-      <div style={{
-        height: 6,
-        borderRadius: 3,
-        background: "rgba(255,255,255,0.1)",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          height: "100%",
-          width: `${Math.min(percent, 100)}%`,
+      <div
+        style={{
+          height: 6,
           borderRadius: 3,
-          background: color,
-          transition: "width 0.3s ease",
-        }} />
+          background: "rgba(255,255,255,0.1)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${Math.min(percent, 100)}%`,
+            borderRadius: 3,
+            background: color,
+            transition: "width 0.3s ease",
+          }}
+        />
       </div>
     </div>
   );
@@ -42,8 +53,10 @@ function Bar({ label, percent, detail, color }: {
 
 export default function StatusBar({ info }: Props) {
   const cpuColor = info.cpu_usage > 80 ? "#ef4444" : info.cpu_usage > 50 ? "#f59e0b" : "#22c55e";
-  const memColor = info.memory_percent > 90 ? "#ef4444" : info.memory_percent > 70 ? "#f59e0b" : "#3b82f6";
-  const diskColor = info.disk_percent_used > 90 ? "#ef4444" : info.disk_percent_used > 70 ? "#f59e0b" : "#8b5cf6";
+  const memColor =
+    info.memory_percent > 90 ? "#ef4444" : info.memory_percent > 70 ? "#f59e0b" : "#3b82f6";
+  const diskColor =
+    info.disk_percent_used > 90 ? "#ef4444" : info.disk_percent_used > 70 ? "#f59e0b" : "#8b5cf6";
 
   return (
     <div style={{ padding: "16px 20px" }}>

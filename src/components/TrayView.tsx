@@ -16,20 +16,24 @@ export default function TrayView() {
   }, [view]);
 
   return (
-    <div style={{
-      width: 360,
-      minHeight: 200,
-      background: "rgba(30, 30, 30, 0.95)",
-      borderRadius: 10,
-      overflow: "hidden",
-    }}>
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "10px 20px",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
-      }}>
+    <div
+      style={{
+        width: 360,
+        minHeight: 200,
+        background: "rgba(30, 30, 30, 0.95)",
+        borderRadius: 10,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "10px 20px",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
         <span style={{ fontSize: 13, fontWeight: 700 }}>System Monitor</span>
         {view === "status" && (
           <button
