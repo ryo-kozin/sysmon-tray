@@ -1,0 +1,49 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "schedule:earlyMondays", ":timezone(Asia/Tokyo)"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Group Tauri npm packages",
+      "matchManagers": ["npm"],
+      "matchPackagePatterns": ["^@tauri-apps/"],
+      "groupName": "tauri npm",
+      "automerge": false
+    },
+    {
+      "description": "Group React packages",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["react", "react-dom"],
+      "matchPackagePatterns": ["^@types/react"],
+      "groupName": "react",
+      "automerge": false
+    },
+    {
+      "description": "Group Tauri Rust crates",
+      "matchManagers": ["cargo"],
+      "matchPackagePatterns": ["^tauri"],
+      "groupName": "tauri cargo",
+      "automerge": false
+    },
+    {
+      "description": "Automerge patch updates for dev dependencies",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "description": "Automerge patch updates for Rust crates",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+    {
+      "description": "Group GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions",
+      "automerge": true
+    }
+  ]
+}
