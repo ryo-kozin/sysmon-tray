@@ -4,6 +4,17 @@ A privacy-first [Model Context Protocol](https://modelcontextprotocol.io/) (MCP)
 
 **Only numerical values are shared** — no process names, file paths, usernames, or any personally identifiable information.
 
+## Why?
+
+AI coding assistants are blind to your system state. They don't know if your machine is thrashing on memory or if disk space is critically low. `sysmon-mcp` bridges that gap — giving your AI assistant just enough system awareness to make better decisions, without compromising your privacy.
+
+**Example conversations you can have:**
+
+- "Is my system too busy to run a heavy build right now?"
+- "How much disk space do I have left?"
+- "Check if my memory is running low before starting Docker"
+- "Give me a system health overview"
+
 ## Install
 
 ```bash
@@ -108,6 +119,8 @@ This server is designed with privacy as a core principle:
 - No network interface names or addresses
 - Safe to use with any AI assistant
 
+Your process list, file system layout, and personal data never leave your machine — the AI only sees aggregate numbers like "CPU: 23.4%, Memory: 70.3%".
+
 ## Performance
 
 | Metric     | sysmon-mcp | Activity Monitor |
@@ -115,6 +128,24 @@ This server is designed with privacy as a core principle:
 | Memory     | ~9 MB      | ~89 MB           |
 | Binary     | 414 KB     | —                |
 | CPU (idle) | ~0%        | ~1-3%            |
+
+## Troubleshooting
+
+**"Command not found" after `cargo install`**
+Ensure `~/.cargo/bin` is in your `PATH`:
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+**AI assistant can't connect**
+
+1. Verify the binary is installed: `which sysmon-mcp`
+2. Test manually: `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"0.1.0"}}}' | sysmon-mcp`
+3. Check your config file path matches your AI assistant's expected location
+
+**Metrics show 0% CPU on first call**
+This is normal — the first reading after startup may show 0% as the CPU usage calculation requires two data points. Subsequent calls will show accurate values.
 
 ## Protocol
 

@@ -15,11 +15,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Codecov integration for coverage tracking
 - Accessibility attributes (`role="progressbar"`, `aria-*`, `htmlFor`/`id` linking)
 - `sysmon-mcp/README.md` with install/configure/usage docs
+- Competitive comparison table in README
+- Use cases and AI workflow examples in documentation
+- Architecture overview and commit conventions in CONTRIBUTING.md
+- Troubleshooting section in MCP server documentation
 
 ### Changed
 
 - Refactored MCP `handle_request` for testability
 - Release workflow now runs tests before building
+- README restructured with AI-first messaging and clearer installation flow
+- CONTRIBUTING.md expanded with architecture diagram, testing guide, and "Adding New Metrics" guide
 
 ### Fixed
 
