@@ -6,6 +6,7 @@
   "description": "Lightweight cross-platform system resource monitor for your menu bar",
   "author": "ryotaro",
   "license": "MIT",
+  "homepage": "https://github.com/ryo-kozin/sysmon-tray",
   "repository": {
     "type": "git",
     "url": "https://github.com/ryo-kozin/sysmon-tray.git"
