@@ -17,10 +17,10 @@
         "width": 360,
         "height": 480,
         "resizable": false,
-        "visible": false,
-        "decorations": false,
-        "skipTaskbar": true,
-        "transparent": true
+        "visible": true,
+        "decorations": true,
+        "skipTaskbar": false,
+        "transparent": false
       }
     ],
     "trayIcon": {

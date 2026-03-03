@@ -222,6 +222,41 @@ mod tests {
     }
 
     #[test]
+    fn cpu_sustained_triggers_notification() {
+        let notifier = NotifierState::new();
+        let config = Config {
+            cpu_sustained_secs: 0,
+            ..Config::default()
+        };
+        let info = make_info(95.0, 50.0, 100 * 1_073_741_824);
+        let result = notifier.check(&info, &config);
+        assert!(
+            result.iter().any(|n| n.title == "CPU Usage High"),
+            "CPU alert should fire when sustained_secs=0"
+        );
+    }
+
+    #[test]
+    fn cpu_cooldown_prevents_repeat() {
+        let notifier = NotifierState::new();
+        let config = Config {
+            cpu_sustained_secs: 0,
+            notification_cooldown_mins: 15,
+            ..Config::default()
+        };
+        let info = make_info(95.0, 50.0, 100 * 1_073_741_824);
+
+        let first = notifier.check(&info, &config);
+        assert!(first.iter().any(|n| n.title == "CPU Usage High"));
+
+        let second = notifier.check(&info, &config);
+        assert!(
+            !second.iter().any(|n| n.title == "CPU Usage High"),
+            "cooldown should prevent repeat CPU notification"
+        );
+    }
+
+    #[test]
     fn multiple_alerts_can_fire_simultaneously() {
         let notifier = NotifierState::new();
         let config = Config {

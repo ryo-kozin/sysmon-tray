@@ -34,6 +34,7 @@ impl MonitorState {
         let mut sys = self.system.lock().unwrap();
         sys.refresh_cpu_all();
         sys.refresh_memory();
+        sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
         let mut disks = self.disks.lock().unwrap();
         disks.refresh(true);
@@ -141,6 +142,47 @@ mod tests {
         let json = serde_json::to_string(&info).unwrap();
         assert!(json.contains("42.5"));
         assert!(json.contains("memory_total"));
+    }
+
+    #[test]
+    fn top_processes_have_content() {
+        let monitor = MonitorState::new();
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        let info = monitor.refresh_and_get();
+        assert!(
+            !info.top_cpu_process.is_empty(),
+            "top_cpu_process should not be empty"
+        );
+        assert!(
+            !info.top_mem_process.is_empty(),
+            "top_mem_process should not be empty"
+        );
+        assert!(
+            info.top_cpu_process.contains('(') && info.top_cpu_process.contains(')'),
+            "top_cpu_process should contain usage in parens"
+        );
+        assert!(
+            info.top_mem_process.contains("MB"),
+            "top_mem_process should contain MB"
+        );
+    }
+
+    #[test]
+    fn system_info_zero_disk_edge_case() {
+        let info = SystemInfo {
+            cpu_usage: 0.0,
+            memory_total: 0,
+            memory_used: 0,
+            memory_percent: 0.0,
+            disk_total: 0,
+            disk_free: 0,
+            disk_percent_used: 0.0,
+            top_cpu_process: String::new(),
+            top_mem_process: String::new(),
+        };
+        assert_eq!(info.disk_percent_used, 0.0);
+        assert_eq!(info.memory_percent, 0.0);
+        assert!(info.top_cpu_process.is_empty());
     }
 
     #[test]

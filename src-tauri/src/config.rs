@@ -180,4 +180,59 @@ mod tests {
         assert!(!v.notify_disk);
         assert!(v.autostart);
     }
+
+    #[test]
+    fn save_and_load_roundtrip() {
+        let dir = std::env::temp_dir().join("system-monitor-test");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config_test.json");
+
+        let cfg = Config {
+            update_interval_secs: 5,
+            cpu_threshold_percent: 90.0,
+            autostart: true,
+            ..Config::default()
+        };
+
+        // Save
+        let data = serde_json::to_string_pretty(&cfg).unwrap();
+        fs::write(&path, &data).unwrap();
+
+        // Load
+        let loaded: Config = serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(loaded.update_interval_secs, 5);
+        assert!((loaded.cpu_threshold_percent - 90.0).abs() < f32::EPSILON);
+        assert!(loaded.autostart);
+
+        // Cleanup
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_dir(&dir);
+    }
+
+    #[test]
+    fn load_corrupt_json_falls_back_to_default() {
+        let dir = std::env::temp_dir().join("system-monitor-test-corrupt");
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("config_corrupt.json");
+
+        fs::write(&path, "not valid json!!!").unwrap();
+
+        let result: Config =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap_or_default();
+        assert_eq!(result.update_interval_secs, 3);
+        assert!((result.cpu_threshold_percent - 80.0).abs() < f32::EPSILON);
+
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_dir(&dir);
+    }
+
+    #[test]
+    fn load_missing_file_returns_default() {
+        let path = std::env::temp_dir().join("system-monitor-nonexistent/config.json");
+        let result: Config = match fs::read_to_string(&path) {
+            Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
+            Err(_) => Config::default(),
+        };
+        assert_eq!(result.update_interval_secs, 3);
+    }
 }

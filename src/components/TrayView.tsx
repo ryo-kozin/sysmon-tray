@@ -20,8 +20,7 @@ export default function TrayView() {
       style={{
         width: 360,
         minHeight: 200,
-        background: "rgba(30, 30, 30, 0.95)",
-        borderRadius: 10,
+        background: "#1e1e1e",
         overflow: "hidden",
       }}
     >

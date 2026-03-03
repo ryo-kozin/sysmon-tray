@@ -88,7 +88,6 @@ Settings are stored in your system config directory:
 │   │   └── config.rs       # Settings persistence
 │   └── capabilities/
 │       └── default.json    # Minimal permissions
-└── SPEC.md                 # Detailed specification (Japanese)
 ```
 
 ## MCP Server (AI Integration)
