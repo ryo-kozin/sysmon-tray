@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 interface Config {
@@ -33,6 +33,7 @@ function NumberInput({
   max?: number;
   step?: number;
 }) {
+  const id = useId();
   return (
     <div
       style={{
@@ -42,8 +43,11 @@ function NumberInput({
         marginBottom: 10,
       }}
     >
-      <label style={{ fontSize: 12 }}>{label}</label>
+      <label htmlFor={id} style={{ fontSize: 12 }}>
+        {label}
+      </label>
       <input
+        id={id}
         type="number"
         value={value}
         min={min}
@@ -73,6 +77,7 @@ function Toggle({
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const id = useId();
   return (
     <div
       style={{
@@ -82,8 +87,15 @@ function Toggle({
         marginBottom: 10,
       }}
     >
-      <label style={{ fontSize: 12 }}>{label}</label>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <label htmlFor={id} style={{ fontSize: 12 }}>
+        {label}
+      </label>
+      <input
+        id={id}
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+      />
     </div>
   );
 }

@@ -48,6 +48,7 @@ export default function TrayView() {
               opacity: 0.6,
             }}
             title="Settings"
+            aria-label="Settings"
           >
             &#9881;
           </button>

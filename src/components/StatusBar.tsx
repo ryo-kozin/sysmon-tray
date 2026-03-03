@@ -30,6 +30,11 @@ function Bar({
         <span style={{ opacity: 0.7 }}>{detail}</span>
       </div>
       <div
+        role="progressbar"
+        aria-label={label}
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
         style={{
           height: 6,
           borderRadius: 3,

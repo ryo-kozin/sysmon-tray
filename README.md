@@ -1,6 +1,7 @@
 # System Monitor
 
 [![CI](https://github.com/ryo-kozin/sysmon-tray/actions/workflows/ci.yml/badge.svg)](https://github.com/ryo-kozin/sysmon-tray/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ryo-kozin/sysmon-tray/graph/badge.svg)](https://codecov.io/gh/ryo-kozin/sysmon-tray)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-blue?logo=tauri)](https://tauri.app)
 

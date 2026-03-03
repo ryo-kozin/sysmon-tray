@@ -36,6 +36,9 @@ jobs:
       - name: Prettier check
         run: npx prettier --check .
 
+      - name: Vitest
+        run: pnpm test
+
   rust:
     name: Rust (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -119,12 +122,13 @@ jobs:
         working-directory: sysmon-mcp
         run: cargo tarpaulin --out xml --output-dir ../coverage-mcp --skip-clean -- --test-threads=1
 
-      - name: Report coverage
-        run: |
-          echo "## src-tauri coverage"
-          cat coverage/cobertura.xml | head -5
-          echo "## sysmon-mcp coverage"
-          cat coverage-mcp/cobertura.xml | head -5
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage/cobertura.xml,coverage-mcp/cobertura.xml
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   security:
     name: Security Audit

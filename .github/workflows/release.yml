@@ -6,8 +6,50 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
+  test:
+    name: Pre-release Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri
+            sysmon-mcp
+
+      - name: Install Linux deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Frontend tests
+        run: pnpm test
+
+      - name: Rust tests (tauri)
+        working-directory: src-tauri
+        run: cargo test
+
+      - name: Rust tests (mcp)
+        working-directory: sysmon-mcp
+        run: cargo test
+
   build-tauri:
     name: Build (${{ matrix.platform }})
+    needs: test
     permissions:
       contents: write
 
