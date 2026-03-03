@@ -1,6 +1,6 @@
 use serde::Serialize;
-use sysinfo::{Disks, System};
 use std::sync::Mutex;
+use sysinfo::{Disks, System};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SystemInfo {
@@ -50,9 +50,18 @@ impl MonitorState {
 
         let (disk_total, disk_free) = disks
             .iter()
-            .filter(|d| d.mount_point() == std::path::Path::new("/"))
+            .filter(|d| {
+                let mp = d.mount_point();
+                mp == std::path::Path::new("/") || mp == std::path::Path::new("C:\\")
+            })
             .map(|d| (d.total_space(), d.available_space()))
             .next()
+            .or_else(|| {
+                disks
+                    .iter()
+                    .max_by_key(|d| d.total_space())
+                    .map(|d| (d.total_space(), d.available_space()))
+            })
             .unwrap_or((0, 0));
 
         let disk_percent_used = if disk_total > 0 {

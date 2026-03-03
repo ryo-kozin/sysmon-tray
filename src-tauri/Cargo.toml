@@ -2,6 +2,10 @@
 name = "system-monitor"
 version = "0.1.0"
 edition = "2021"
+description = "Lightweight cross-platform system resource monitor"
+authors = ["ryotaro"]
+license = "MIT"
+repository = "https://github.com/ryotaro/sysmon-tray"
 
 [lib]
 name = "system_monitor_lib"

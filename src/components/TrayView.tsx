@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useSystemInfo } from "../hooks/useSystemInfo";
 import StatusBar from "./StatusBar";
 import Settings from "./Settings";
 
 export default function TrayView() {
   const [view, setView] = useState<"status" | "settings">("status");
-  const info = useSystemInfo(3000);
+  const [intervalMs, setIntervalMs] = useState(3000);
+  const info = useSystemInfo(intervalMs);
+
+  useEffect(() => {
+    invoke<{ update_interval_secs: number }>("get_config").then((cfg) => {
+      setIntervalMs(cfg.update_interval_secs * 1000);
+    });
+  }, [view]);
 
   return (
     <div style={{

@@ -23,9 +23,25 @@ fn get_config(state: tauri::State<ConfigState>) -> Config {
 }
 
 #[tauri::command]
-fn save_config(state: tauri::State<ConfigState>, new_config: Config) {
-    let mut cfg = state.0.lock().unwrap();
-    *cfg = new_config;
+fn save_config(state: tauri::State<ConfigState>, new_config: Config, app: tauri::AppHandle) {
+    let validated = new_config.validated();
+    let autostart_changed = {
+        let current = state.0.lock().expect("config lock poisoned");
+        current.autostart != validated.autostart
+    };
+
+    if autostart_changed {
+        use tauri_plugin_autostart::ManagerExt;
+        let autostart = app.autolaunch();
+        if validated.autostart {
+            let _ = autostart.enable();
+        } else {
+            let _ = autostart.disable();
+        }
+    }
+
+    let mut cfg = state.0.lock().expect("config lock poisoned");
+    *cfg = validated;
     cfg.save();
 }
 

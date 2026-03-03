@@ -3,6 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "Lightweight cross-platform system resource monitor for your menu bar",
+  "author": "ryotaro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryotaro/sysmon-tray.git"
+  },
+  "keywords": ["system-monitor", "tray", "tauri", "rust", "react"],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

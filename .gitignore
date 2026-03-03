@@ -4,3 +4,11 @@ src-tauri/target/
 src-tauri/gen/
 *.log
 .DS_Store
+Thumbs.db
+.env
+.env.*
+*.pem
+*.key
+.vscode/
+.idea/
+*.orig

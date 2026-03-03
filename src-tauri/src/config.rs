@@ -63,4 +63,16 @@ impl Config {
     }
 }
 
+impl Config {
+    pub fn validated(mut self) -> Self {
+        self.update_interval_secs = self.update_interval_secs.clamp(1, 60);
+        self.cpu_threshold_percent = self.cpu_threshold_percent.clamp(1.0, 100.0);
+        self.cpu_sustained_secs = self.cpu_sustained_secs.clamp(1, 300);
+        self.memory_free_threshold_percent = self.memory_free_threshold_percent.clamp(1.0, 50.0);
+        self.disk_free_threshold_gb = self.disk_free_threshold_gb.clamp(0.5, 500.0);
+        self.notification_cooldown_mins = self.notification_cooldown_mins.clamp(1, 120);
+        self
+    }
+}
+
 pub struct ConfigState(pub Mutex<Config>);
