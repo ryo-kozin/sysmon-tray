@@ -90,6 +90,50 @@ Settings are stored in your system config directory:
 └── SPEC.md                 # Detailed specification (Japanese)
 ```
 
+## MCP Server (AI Integration)
+
+`sysmon-mcp` is a standalone [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes system metrics to AI coding assistants like Claude Code. **Privacy-first**: only numerical values are shared — no process names, file paths, usernames, or any PII.
+
+### Install
+
+```bash
+cd sysmon-mcp
+cargo install --path .
+```
+
+### Configure for Claude Code
+
+Add to `~/.claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "sysmon": {
+      "command": "sysmon-mcp"
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool             | Description                                            |
+| ---------------- | ------------------------------------------------------ |
+| `get_metrics`    | Full system snapshot (CPU, memory, disk, load, uptime) |
+| `get_cpu`        | CPU usage % and core count                             |
+| `get_memory`     | Memory total/used/available and usage %                |
+| `get_disk`       | Disk total/free and usage %                            |
+| `get_load`       | Load averages (1/5/15m), uptime, process count         |
+| `is_system_busy` | Quick check with configurable thresholds               |
+
+### Performance
+
+| Metric   | sysmon-mcp | Activity Monitor |
+| -------- | ---------- | ---------------- |
+| Memory   | ~9 MB      | ~89 MB           |
+| Binary   | 414 KB     | —                |
+| CPU idle | ~0%        | ~1-3%            |
+
 ## Roadmap
 
 - **v0.2** — Process list with kill, notification history

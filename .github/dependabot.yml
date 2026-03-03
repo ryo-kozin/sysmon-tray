@@ -36,6 +36,17 @@ updates:
         patterns:
           - "tauri*"
 
+  - package-ecosystem: cargo
+    directory: /sysmon-mcp
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
